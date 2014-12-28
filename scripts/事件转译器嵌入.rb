@@ -13,7 +13,8 @@ class Game_Interpreter
       wait_for_message
       code = Taroxd::Translator.translate(@list)
       puts code
-      eval code, binding
+      # 不添加 binding 参数。建议与【脚本快捷方式】( Taroxd::Eval ) 配合使用。
+      eval code
       Fiber.yield
       @fiber = nil
     rescue Object => e

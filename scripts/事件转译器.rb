@@ -3,7 +3,7 @@
 # ● 事件转译器
 #----------------------------------------------------------------------------
 
-class << Taroxd::Translator = Object.new
+class Taroxd::Translator
 
   # 将 command 直接代理给 Game_Interpreter#command_xxx
   # 不需要获取 @params 时，可令 set_params 为 nil
@@ -13,7 +13,7 @@ class << Taroxd::Translator = Object.new
     #   "@params = ObjectSpace._id2ref(#{@params.__id__})
     #   command_233"
     # end
-    module_eval %{
+    class_eval %{
       def command_#{code}
         "#{set_params}
         command_#{code}"
@@ -21,17 +21,26 @@ class << Taroxd::Translator = Object.new
     }
   end
 
+  # 翻译事件指令代码
+  def self.translate(list)
+    new(list).translate
+  end
+
+  # list：事件指令列表
+  def initialize(list)
+    @list = list
+    @index = -1
+  end
+
   # 翻译事件指令代码，并放入 lambda 中，以便于 return
-  def translate(list)
+  def translate
     "-> {
-      #{translate_code(list)}
+      #{translate_code}
     }.call"
   end
 
-  # 将事件指令翻译成代码。list：事件指令列表
-  def translate_code(list)
-    @list = list
-    @index = -1
+  # 将事件指令翻译成代码。
+  def translate_code
     ret = ''
     ret << translate_command << "\n" while next_command!
     ret
@@ -312,8 +321,8 @@ class << Taroxd::Translator = Object.new
 
   # 公共事件
   def command_117
-    common_event = $data_common_events[@params[0]]
-    translate_code(common_event.list)
+    event = $data_common_events[@params[0]]
+    self.class.new(event.list).translate_code if event
   end
 
   # 添加标签
