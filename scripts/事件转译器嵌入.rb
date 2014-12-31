@@ -13,13 +13,10 @@ class Taroxd::Translator
 
   @cache = {}
 
-  def self.rb_code(list, map_id, event_id)
-    @cache[list] ||= translate(list, map_id, event_id)
+  def self.cache
+    @cache
   end
 
-  def self.clear_cache
-    @cache.clear
-  end
 end
 
 class Game_Interpreter
@@ -27,7 +24,7 @@ class Game_Interpreter
   Translator = Taroxd::Translator
 
   def rb_code
-    Translator.rb_code(@list, @map_id, @event_id)
+    Translator.translate(@list, @map_id, @event_id)
   end
 
   # 定义一些局部变量，便于事件脚本的使用
@@ -43,6 +40,13 @@ class Game_Interpreter
     binding
   end
 
+  def run
+    wait_for_message
+    instance_eval(&compile_code)
+    Fiber.yield
+    @fiber = nil
+  end
+
   unless Translator::SAVEDATA_COMPATIBLE
     def marshal_dump
       [@map_id, @event_id, @list]
@@ -56,12 +60,13 @@ class Game_Interpreter
 
   if $TEST && Translator::DEBUG_MODE
 
-    def run
-      wait_for_message
-      puts rb_code
-      eval rb_code, translator_binding
-      Fiber.yield
-      @fiber = nil
+    def compile_code
+      proc = Translator.cache[[@list, @map_id, @event_id]]
+      return proc if proc
+      code = rb_code
+      puts code
+      Translator.cache[[@list, @map_id, @event_id]] =
+        eval(code, translator_binding)
     rescue StandardError, SyntaxError => e
       p e
       puts e.backtrace
@@ -70,11 +75,9 @@ class Game_Interpreter
 
   else
 
-    def run
-      wait_for_message
-      eval rb_code, translator_binding
-      Fiber.yield
-      @fiber = nil
+    def compile_code
+      Translator.cache[[@list, @map_id, @event_id]] ||=
+        eval(rb_code, translator_binding)
     end
 
   end # if $TEST && Translator::DEBUG_MODE
@@ -88,7 +91,7 @@ class Game_Map
 
   def setup(map_id)
     setup_without_translator(map_id)
-    Taroxd::Translator.clear_cache
+    Taroxd::Translator.cache.clear
   end
 
 end

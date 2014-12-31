@@ -25,9 +25,9 @@ class Taroxd::Translator
 
   # 翻译事件指令代码，并放入 lambda 中，以便于 return
   def translate
-    "-> {
+    "Proc.new do
       #{translate_code}
-    }.call"
+    end"
   end
 
   protected
@@ -228,10 +228,10 @@ class Taroxd::Translator
     when 102  # 显示选项
       ret << setup_choices(next_params!)
     when 103  # 数值输入的处理
-      ret << setup_num_input(next_params!) <<
+      ret << setup_num_input(next_params!) << 
         "\nFiber.yield while $game_message.num_input?"
     when 104  # 物品选择的处理
-      ret << setup_item_choice(next_params!) <<
+      ret << setup_item_choice(next_params!) << 
         "\nFiber.yield while $game_message.item_choice?"
     end
     ret
