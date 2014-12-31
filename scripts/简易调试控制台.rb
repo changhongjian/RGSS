@@ -27,8 +27,6 @@ class << Taroxd::Console = Object.new
   ]
   
   EXIT_IDENTIFIER = :exit
-  
-  include Taroxd::Eval if Taroxd.const_defined?(:Eval)
 
   #--------------------------------------------------------------------------
   # ● 获取窗口句柄
