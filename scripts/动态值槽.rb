@@ -5,31 +5,29 @@
 #==============================================================================
 
 class Taroxd::Transition
+  # value: 当前值。changing: 当前是否正在变化
   attr_reader :value, :changing
-  #--------------------------------------------------------------------------
-  # ● 初始化
-  #--------------------------------------------------------------------------
+
+  # block 应返回变化的目标
   def initialize(duration, &block)
     @duration = duration
     @block = block
     @value = @target = block.call
     @d = 0
   end
-  #--------------------------------------------------------------------------
-  # ● 更新
-  #--------------------------------------------------------------------------
+
   def update
     @target = @block.call
     @changing = @value != @target
     update_transition if @changing
   end
-  #--------------------------------------------------------------------------
-  # ● 更新变化
-  #--------------------------------------------------------------------------
+
+  private
+
   def update_transition
     @d = @duration if @d.zero?
     @d -= 1
-    @value = 
+    @value =
     if @d.zero?
       @target
     else
@@ -39,36 +37,31 @@ class Taroxd::Transition
 end
 
 module Taroxd::RollGauge
-  #--------------------------------------------------------------------------
-  # ● 值槽滚动所需的帧数
-  #--------------------------------------------------------------------------
+
+  Transition = Taroxd::Transition
+
+  # 值槽滚动所需的帧数
   def gauge_roll_frame; 30; end
-  #--------------------------------------------------------------------------
-  # ● 每隔多少帧刷新一次值槽
-  #--------------------------------------------------------------------------
+
+  # 每隔多少帧刷新一次值槽
   def gauge_roll_interval; 1; end
-  #--------------------------------------------------------------------------
-  # ● 值槽滚动所需的次数
-  #--------------------------------------------------------------------------
+
+  # 值槽滚动所需的次数
   def gauge_roll_times; gauge_roll_frame / gauge_roll_interval; end
-  #--------------------------------------------------------------------------
-  # ● 初始化
-  #--------------------------------------------------------------------------
+
   def initialize(*)
     @gauge_transitions = Hash.new do |hash, actor|
       hash[actor] = {
-        hp: Taroxd::Transition.new(gauge_roll_times) { actor.hp },
-        mp: Taroxd::Transition.new(gauge_roll_times) { actor.mp },
-        tp: Taroxd::Transition.new(gauge_roll_times) { actor.tp },
+        hp: Transition.new(gauge_roll_times) { actor.hp },
+        mp: Transition.new(gauge_roll_times) { actor.mp },
+        tp: Transition.new(gauge_roll_times) { actor.tp },
       }
     end
     @gauge_transitions.compare_by_identity
     @gauge_roll_count = 0
     super
   end
-  #--------------------------------------------------------------------------
-  # ● 更新
-  #--------------------------------------------------------------------------
+
   def update
     super
     if (@gauge_roll_count += 1) >= gauge_roll_interval
@@ -83,9 +76,12 @@ module Taroxd::RollGauge
       @gauge_roll_count = 0
     end
   end
-  #--------------------------------------------------------------------------
-  # ● 绘制角色 HP
-  #--------------------------------------------------------------------------
+
+  # 滚动所有值槽。可在子类重定义。
+  def roll_all_gauge
+    refresh
+  end
+
   def draw_actor_hp(actor, x, y, width = 124)
     hp = @gauge_transitions[actor][:hp].value
     rate = hp.fdiv(actor.mhp)
@@ -95,9 +91,7 @@ module Taroxd::RollGauge
     draw_current_and_max_values(x, y, width, hp.to_i, actor.mhp,
       hp_color(actor), normal_color)
   end
-  #--------------------------------------------------------------------------
-  # ● 绘制角色 MP
-  #--------------------------------------------------------------------------
+
   def draw_actor_mp(actor, x, y, width = 124)
     mp = @gauge_transitions[actor][:mp].value
     rate = mp.fdiv(actor.mmp)
@@ -107,9 +101,7 @@ module Taroxd::RollGauge
     draw_current_and_max_values(x, y, width, mp.to_i, actor.mmp,
       mp_color(actor), normal_color)
   end
-  #--------------------------------------------------------------------------
-  # ● 绘制角色 TP
-  #--------------------------------------------------------------------------
+
   def draw_actor_tp(actor, x, y, width = 124)
     tp = @gauge_transitions[actor][:tp].value
     rate = tp.fdiv(actor.max_tp)
@@ -119,12 +111,7 @@ module Taroxd::RollGauge
     change_color(tp_color(actor))
     draw_text(x + width - 42, y, 42, line_height, tp.to_i, 2)
   end
-  #--------------------------------------------------------------------------
-  # ● 滚动所有值槽
-  #--------------------------------------------------------------------------
-  def roll_all_gauge
-    refresh
-  end
+
 end
 
 class Window_BattleStatus
@@ -132,10 +119,9 @@ class Window_BattleStatus
 end
 
 class Window_MenuStatus < Window_Selectable
+
   include Taroxd::RollGauge
-  #--------------------------------------------------------------------------
-  # ● 滚动所有值槽
-  #--------------------------------------------------------------------------
+
   def roll_all_gauge
     item_max.times do |i|
       actor = $game_party.members[i]
