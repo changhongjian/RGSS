@@ -211,6 +211,12 @@ class Taroxd::Translator
   # 指令
   # 请对照 Game_Interpreter 的定义阅读。
 
+
+  # 空指令
+  def command_0
+    'nil'
+  end
+
   # 显示文字
   def command_101
     ret = "
@@ -228,10 +234,10 @@ class Taroxd::Translator
     when 102  # 显示选项
       ret << setup_choices(next_params!)
     when 103  # 数值输入的处理
-      ret << setup_num_input(next_params!) << 
+      ret << setup_num_input(next_params!) <<
         "\nFiber.yield while $game_message.num_input?"
     when 104  # 物品选择的处理
-      ret << setup_item_choice(next_params!) << 
+      ret << setup_item_choice(next_params!) <<
         "\nFiber.yield while $game_message.item_choice?"
     end
     ret
@@ -1040,11 +1046,6 @@ class Taroxd::Translator
   # 脚本
   def command_355
     @params[0]
-  end
-
-  # 空指令
-  def command_0
-    'nil'
   end
 
   # 脚本数据
