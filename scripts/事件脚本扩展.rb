@@ -9,7 +9,10 @@
 #    Game_Interpreter
 #      this_event: 获取本事件。如果事件不在当前地图上，返回 nil。
 #      add_battlelog(text): 追加战斗信息。
-#      self_switch: 返回当前事件的 SelfSwitch 对象。
+#      self_switch
+#      self_switch(event_id)
+#      self_switch(event_id, map_id):
+#        返回对应事件的 SelfSwitch 对象。
 #
 #    Game_Switches/Game_Variables/Game_SelfSwitches
 #       clear / reset: 清空数据
@@ -97,8 +100,8 @@ class Game_Interpreter
     end
   end
 
-  def self_switch
-    @self_switch ||= SelfSwitch.new(@map_id, @event_id)
+  def self_switch(event_id = @event_id, map_id = @map_id)
+    SelfSwitch.new(map_id, event_id)
   end
 
 end
