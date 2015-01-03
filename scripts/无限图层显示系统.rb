@@ -110,6 +110,7 @@ module Taroxd::ULDS
       visible = true'
     end
 
+    # 只计算一次的初始化代码
     def init_attr_code
       "#{set_attr_code 'z', DEFAULT_Z}
       #{set_attr_code 'blend_type'}
@@ -123,11 +124,11 @@ module Taroxd::ULDS
         define_singleton_method :update do
           #{set_visible_code}
           return unless visible
-          #{set_pos_code 'x'}
-          #{set_pos_code 'y'}
           #{set_attr_code 'zoom_x'}
           #{set_attr_code 'zoom_y'}
           #{set_attr_code 'opacity'}
+          #{set_pos_code 'x'}
+          #{set_pos_code 'y'}
           #{set_t_code}
         end
       }
@@ -142,11 +143,13 @@ module Taroxd::ULDS
     end
 
     # 设置位置的代码
+    #   self.ox = $game_map.display_x * 32.0 / zoom_x - (formula)
     def set_pos_code(key)
       formula = extract(key)
       formula &&= " - (#{formula})"
       scroll = extract("scroll_#{key}", 32.0).to_f
-      "self.o#{key} = $game_map.display_#{key} * #{scroll}#{formula}"
+      basic = "$game_map.display_#{key} * #{scroll} / zoom_#{key}"
+      "self.o#{key} = #{basic}#{formula}"
     end
 
     # 设置属性的代码
